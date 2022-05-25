@@ -1,0 +1,79 @@
+{% extends 'polls/master.html' %}
+{% load static %}
+{% block content %}
+<div class="container-fluid mt-5">
+
+
+    <div class="row">
+        {% if post %}
+            <div class="col-12 col-lg-6 d-flex justify-content-center align-items-center" style="height: 80vh;" >
+                <img src="{{ post.image_file.url }}" class="img-fluid" alt="">
+            </div>
+            
+            <div class="col-12 col-lg-6 p-4 scrollable"  >
+                <h1><p class="lead display-2">{{post.title_text}} </p></h1>
+                <h4>{{post.category_text}}</h4>
+                <p><small>Published - {{post.pub_date}}</small></p>
+            
+        
+                <hr class="mt-4">
+                
+                <p>{{post.body_text}}</p>
+                    
+                
+                
+                <div class="row">
+                    <hr class="mt-2">
+                    <div class="col-12 col-md-4 mt-3">
+                        <h5>Add comment</h5>
+                        <form action="{% url 'comment' post.id %}" method="post">
+                            {% csrf_token %}
+
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Nickname</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+                                <label for="body" class="form-label">Your comment</label>
+                                <textarea name="body" class="form-control" required></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-outline-success">Comment</button>
+                        </form>
+
+                    </div>
+                    {% if post.comment_set.all %}
+                    <div class="col-12 col-md-8 mt-3">
+                        <h5 >Comments</h5>
+                        
+                        <ul class="list-group">
+                        {% for comment in post.comment_set.all %}
+                            <li class="list-group-item"> <strong>{{comment.name}}</strong> - {{ comment.body_text }}</li>
+                        {% endfor %}
+                        </ul>
+                            
+                        
+                    </div>
+                    {% endif %}
+                </div>
+                
+
+                
+                
+        
+        </div>
+            
+            
+
+        {% else %}
+            <p>No matching post is available.</p>
+        {% endif %}
+
+        
+    </div>
+
+
+</div>
+{% endblock %}

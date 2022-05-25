@@ -1,0 +1,27 @@
+
+{% extends 'polls/master.html' %}
+{% load static %}
+{% block content %}
+    <div class="container mt-5" style="min-height:90vh">
+        <div class="row">
+            <div class="col-12 col-lg-6">
+                <h1>Basic information</h1>
+                <p>
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptatum accusamus nemo molestiae sapiente ex pariatur doloribus, cumque accusantium! Aut aliquid nostrum natus architecto odio commodi molestias dicta, voluptatibus harum nihil!
+
+                </p>
+
+                <h2>Social media links</h2>
+                <ul class="list-group">
+                    <li class="list-group-item"><a href="">Facebook</a></li>
+                    <li class="list-group-item"><a href="">Instagram</a></li>
+                    <li class="list-group-item"><a href="">Funanimals@mail.com</a></li>
+                </ul>
+            </div>
+            <div class="col-12 col-lg-6 mt-5 mt-lg-0">
+                <img src="{% static 'polls/info.jpg' %}" alt="" class="img-fluid">
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

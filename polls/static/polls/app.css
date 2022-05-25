@@ -1,0 +1,8 @@
+.scrollable{
+    overflow-y:scroll; position: fixed; right:0; height: 80vh;
+}
+@media only screen and (max-width: 996px) {
+    .scrollable{
+        overflow-y:none; position: relative; height: auto;
+    }
+  }
