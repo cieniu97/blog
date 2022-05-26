@@ -6,6 +6,7 @@ from django.urls import reverse
 
 from .models import Post
 
+import lorem
 def create_post(title_text, days):
     """
     Create a post with the given `title_text` and published the
@@ -13,7 +14,8 @@ def create_post(title_text, days):
     in the past, positive for posts that have yet to be published).
     """
     time = timezone.now() + datetime.timedelta(days=days)
-    return Post.objects.create(title_text=title_text, pub_date=time)
+    body = lorem.text()
+    return Post.objects.create(title_text=title_text, pub_date=time, body_text = body)
 # Create your tests here.
 class PostModelTests(TestCase):
     def test_no_posts(self):

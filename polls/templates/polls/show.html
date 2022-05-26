@@ -24,16 +24,13 @@
                 
                 <div class="row">
                     <hr class="mt-2">
+                    {% if user.is_authenticated %}
                     <div class="col-12 col-md-4 mt-3">
                         <h5>Add comment</h5>
-                        <form action="{% url 'comment' post.id %}" method="post">
+                        <form action="{% url 'storeComment' post.id %}" method="post">
                             {% csrf_token %}
 
-                            <div class="mb-3">
-                                <label for="name" class="form-label">Nickname</label>
-                                <input type="text" class="form-control" id="name" name="name" required>
-                            </div>
-                            
+                                                        
                             <div class="mb-3">
                                 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
                                 <label for="body" class="form-label">Your comment</label>
@@ -44,13 +41,21 @@
                         </form>
 
                     </div>
+                    {% else %}
+                    
+                    <a class="nav-link" aria-current="page" href="/login">Login to comment</a>
+                    
+                    
+                    
+                    {% endif %}
+                    
                     {% if post.comment_set.all %}
                     <div class="col-12 col-md-8 mt-3">
                         <h5 >Comments</h5>
                         
                         <ul class="list-group">
                         {% for comment in post.comment_set.all %}
-                            <li class="list-group-item"> <strong>{{comment.name}}</strong> - {{ comment.body_text }}</li>
+                            <li class="list-group-item"> <strong>{{comment.user.username}}</strong> - {{ comment.body_text }}</li>
                         {% endfor %}
                         </ul>
                             

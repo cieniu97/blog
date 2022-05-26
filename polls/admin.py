@@ -5,14 +5,14 @@ from .models import Post, Comment
 
 class CommentInline(admin.TabularInline):
     model = Comment
-    extra = 3
+    extra = 1
 
 
 class PostAdmin(admin.ModelAdmin):
     fieldsets = [
         ('Title',               {'fields': ['title_text']}),
         ('Category', {'fields': ['category_text']}),
-        ('Publication date', {'fields': ['pub_date'], 'classes': ['collapse']}),
+        ('Publication date', {'fields': ['pub_date']}),
         ('Wrtie a blog post', {'fields': ['body_text']}),
         ('Upload image', {'fields': ['image_file']}),
     ]
