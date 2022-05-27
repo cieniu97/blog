@@ -1,13 +1,15 @@
 import datetime
-
 from django.test import TestCase
 from django.utils import timezone
 from django.urls import reverse
-
-from .models import Post
+from .models import Post, Comment
+from django.contrib.auth.models import User
 
 import lorem
-def create_post(title_text, days):
+import random
+import string
+
+def create_post(title_text, days, category = "test category"):
     """
     Create a post with the given `title_text` and published the
     given number of `days` offset to now (negative for posts published
@@ -15,8 +17,20 @@ def create_post(title_text, days):
     """
     time = timezone.now() + datetime.timedelta(days=days)
     body = lorem.text()
-    return Post.objects.create(title_text=title_text, pub_date=time, body_text = body)
-# Create your tests here.
+    return Post.objects.create(title_text=title_text, pub_date=time, body_text = body, category_text=category)
+
+def get_categories():
+    categories = {}
+    for post in Post.objects.all():
+        if post.category_text not in categories:
+            categories[post.category_text] = 1
+        else:
+            categories[post.category_text] += 1
+    
+    categories = sorted(categories.items(), key=lambda item: item[1], reverse=True)
+    categories = categories[0:10]
+    return categories
+
 class PostModelTests(TestCase):
     def test_no_posts(self):
         """
@@ -101,23 +115,114 @@ class PostModelTests(TestCase):
         recent_post = Post(pub_date=time)
         self.assertIs(recent_post.was_published_recently(), True)
 
-    class PostDetailViewTests(TestCase):
-        def test_future_post(self):
-            """
-            The detail view of a post with a pub_date in the future
-            returns a 404 not found.
-            """
-            future_post = create_post(title_text='Future post.', days=5)
-            url = reverse('show', args=(future_post.id,))
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, 404)
+class PostDetailViewTests(TestCase):
+    def test_future_post(self):
+        """
+        The detail view of a post with a pub_date in the future
+        returns a 404 not found.
+        """
+        future_post = create_post(title_text='Future post.', days=5)
+        url = reverse('show', args=(future_post.id,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
 
-        def test_past_post(self):
-            """
-            The detail view of a post with a pub_date in the past
-            displays the post's text.
-            """
-            past_post = create_post(title_text='Past Question.', days=-5)
-            url = reverse('show', args=(past_post.id,))
-            response = self.client.get(url)
-            self.assertContains(response, past_post.title_text)
+    def test_past_post(self):
+        """
+        The detail view of a post with a pub_date in the past
+        displays the post's text.
+        """
+        past_post = create_post(title_text='Past Question.', days=-5)
+        url = reverse('show', args=(past_post.id,))
+        response = self.client.get(url)
+        self.assertContains(response, past_post.title_text)
+
+    def test_comment(self):
+        """
+        The detail view of a post contains added comment
+        """
+        past_post = create_post(title_text='Past Question.', days=-5)
+        body = lorem.text()
+        user = User.objects.create_user(username="testUser", email="testEmail@email.com", password="password")
+        post_comment = Comment.objects.create(post = past_post, user = user, body_text = body)
+        response = self.client.get(reverse('show', args=(past_post.id,)))
+        self.assertContains(response, post_comment.body_text)
+
+class PagesStatusTests(TestCase):
+    def test_index(self):
+        response = self.client.get(reverse('index'))
+        self.assertEqual(response.status_code, 200)
+    
+    def test_photos(self):
+        response = self.client.get(reverse('photos'))
+        self.assertEqual(response.status_code, 200)
+    
+    def test_info(self):
+        response = self.client.get(reverse('info'))
+        self.assertEqual(response.status_code, 200)
+    
+    def test_search(self):
+        response = self.client.get(reverse('search',kwargs={'title':"".join(random.choices(string.ascii_lowercase, k=5))}))
+        self.assertEqual(response.status_code, 200)
+    
+    def test_register(self):
+        response = self.client.get(reverse('register'))
+        self.assertEqual(response.status_code, 200)
+    
+    def test_login(self):
+        response = self.client.get(reverse('login'))
+        self.assertEqual(response.status_code, 200)
+
+class CategoriesTests(TestCase):
+    def test_trending_category(self):
+        """
+        Create 50 new posts with the random category from ten listed.
+        Create more than top trending category new posts to see if it will show up in
+        index view on trending categories
+        """
+        past_categories=[
+            'category1',
+            'category2',
+            'category3',
+            'category4',
+            'category5',
+            'category6',
+            'category7',
+            'category8',
+            'category9',
+            'category10',
+            ]
+        for m in range(50):
+            create_post("title_text", 0, random.choice(past_categories))
+        categories = get_categories()
+        category = "tredning category"
+        for n in range(0, categories[0][1]):
+            create_post("title_text", 0, category)
+        response = self.client.get(reverse('index'))
+        self.assertContains(response, category)
+    
+    def test_not_trending_category(self):
+        """
+        Create 50 new posts with the random category from ten listed.
+        Create more than top trending category new posts to see if it will show up in
+        index view on trending categories
+        """
+        past_categories=[
+            'category1',
+            'category2',
+            'category3',
+            'category4',
+            'category5',
+            'category6',
+            'category7',
+            'category8',
+            'category9',
+            'category10',
+            ]
+        for m in range(50):
+            create_post("title_text", 0, random.choice(past_categories))
+        categories = get_categories()
+        category = "tredning category"
+        for n in range(1, categories[9][1]):
+            create_post("title_text", 0, category)
+        response = self.client.get(reverse('index'))
+        self.assertNotContains(response, category)
