@@ -445,3 +445,4 @@ class TestSelenium(TestCase):
             else:
                 self.info = False
             self.assertEqual(self.info, False)
+            
