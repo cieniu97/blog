@@ -1,9 +1,15 @@
 import datetime
+from time import sleep
+from tkinter.tix import Tree
 from django.test import TestCase
 from django.utils import timezone
 from django.urls import reverse
 from .models import Post, Comment
 from django.contrib.auth.models import User
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from . import urls
 
 import lorem
 import random
@@ -155,11 +161,11 @@ class PagesStatusTests(TestCase):
     def test_photos(self):
         response = self.client.get(reverse('photos'))
         self.assertEqual(response.status_code, 200)
-    
+
     def test_info(self):
         response = self.client.get(reverse('info'))
         self.assertEqual(response.status_code, 200)
-    
+
     def test_search(self):
         response = self.client.get(reverse('search',kwargs={'title':"".join(random.choices(string.ascii_lowercase, k=5))}))
         self.assertEqual(response.status_code, 200)
@@ -167,7 +173,7 @@ class PagesStatusTests(TestCase):
     def test_register(self):
         response = self.client.get(reverse('register'))
         self.assertEqual(response.status_code, 200)
-    
+
     def test_login(self):
         response = self.client.get(reverse('login'))
         self.assertEqual(response.status_code, 200)
@@ -200,29 +206,180 @@ class CategoriesTests(TestCase):
         response = self.client.get(reverse('index'))
         self.assertContains(response, category)
     
-    def test_not_trending_category(self):
-        """
-        Create 50 new posts with the random category from ten listed.
-        Create more than top trending category new posts to see if it will show up in
-        index view on trending categories
-        """
-        past_categories=[
-            'category1',
-            'category2',
-            'category3',
-            'category4',
-            'category5',
-            'category6',
-            'category7',
-            'category8',
-            'category9',
-            'category10',
-            ]
-        for m in range(50):
-            create_post("title_text", 0, random.choice(past_categories))
-        categories = get_categories()
-        category = "tredning category"
-        for n in range(1, categories[9][1]):
-            create_post("title_text", 0, category)
-        response = self.client.get(reverse('index'))
-        self.assertNotContains(response, category)
+    # def test_not_trending_category(self):
+    #     """
+    #     Create 50 new posts with the random category from ten listed.
+    #     Create more than top trending category new posts to see if it will show up in
+    #     index view on trending categories
+    #     """
+    #     past_categories=[
+    #         'category1',
+    #         'category2',
+    #         'category3',
+    #         'category4',
+    #         'category5',
+    #         'category6',
+    #         'category7',
+    #         'category8',
+    #         'category9',
+    #         'category10',
+    #         ]
+    #     for m in range(50):
+    #         create_post("title_text", 0, random.choice(past_categories))
+    #     categories = get_categories()
+    #     category = "tredning category"
+    #     for n in range(1, categories[9][1]):
+    #         create_post("title_text", 0, category)
+    #     response = self.client.get(reverse('index'))
+    #     self.assertNotContains(response, category)
+
+class TestSelenium(TestCase):
+    def setUp(self):
+        self.CHROMEDRIVER_PATH = '/usr/local/bin/chromedriver'
+        self.WINDOW_SIZE = "1920,1080"
+        self.chrome_options = Options()
+        self.chrome_options.add_argument("--headless")
+        self.chrome_options.add_argument("--window-size=%s" % self.WINDOW_SIZE)
+        self.chrome_options.add_argument('--no-sandbox')
+        self.chrome_options.add_argument('--disable-dev-shm-usage')    
+        self.driver = webdriver.Chrome(executable_path=self.CHROMEDRIVER_PATH,chrome_options=self.chrome_options)
+        self.address = "http://localhost:8000/"
+        self.driver.get(self.address)
+
+    def test_is_working(self):
+        self.assertEqual(self.driver.title, 'FUN animals')
+
+    def test_pages_urls_working(self):
+        self.exceptionList = ['storeUser', 'loginUser', 'storeComment', 'show']
+        self.argumentNeedList = ['search', 'categories']
+        
+        self.work = 0
+        for elem in range(len(urls.urlpatterns)):
+            self.url = str(urls.urlpatterns[elem])
+            self.urlFix = self.url.partition("=")[2][:-2].replace("'","")
+            if self.urlFix not in self.exceptionList:
+                if self.urlFix not in self.argumentNeedList:
+                    if self.urlFix == "index":
+                        self.address = "http://localhost:8000/"
+                    else:
+                        self.address = "http://localhost:8000/" + self.urlFix
+                else:
+                    self.address = "http://localhost:8000/" + self.urlFix + "/any"
+                self.driver.get(self.address)
+                self.assertEqual(self.driver.title, 'FUN animals')
+
+    def test_images_show(self):
+        self.element = self.driver.find_elements_by_class_name("postimg")
+        for elem in self.element:
+            elem = elem.is_displayed()
+            self.assertEqual(elem, True)
+
+    def test_images_urls(self):
+        self.element = self.driver.find_elements_by_class_name("postimg")
+        self.imgsrcs = ['Tiger_shark.jpg', 'f9b9dae53ccc8733ab7ca334d79cdc5d--animals.jpg', 'avaterH4B_wYomu3D.png', 'avaterH4B_wYomu3D.png']
+        self.imgurls = []
+        for i in self.imgsrcs:
+            self.imgurls.append(f"""url("{self.address}media/photos/{i}")""")
+        for elem in self.element:
+            elem = elem.value_of_css_property("background-image")
+            self.assertIn(elem, self.imgurls)
+
+    def test_post_urls_working(self):
+        self.element = self.driver.find_elements_by_class_name("postbox")
+        self.listLen = len(self.element) + 1
+        for elem in range(1, self.listLen):
+            self.address = f"""http://localhost:8000/{elem}/"""
+            self.driver.get(self.address)
+            self.assertEqual(self.driver.title, 'FUN animals')
+
+    def test_post_dates(self):
+        self.element = self.driver.find_elements_by_class_name("postbox")
+        self.listLen = len(self.element) + 1
+        self.dateslist = []
+        for elem in range(1, self.listLen):
+            self.address = f"""http://localhost:8000/{elem}/"""
+            self.driver.get(self.address)
+            self.dateelement = self.driver.find_element_by_id("publish_date").text
+            self.dateslist.append(self.dateelement[12:-1].replace(".",""))
+        # self.dateslist.append("May 13, 2022, 3:40 pm")
+        self.dateslistsorted = self.dateslist.copy()
+        self.dateslistsorted.sort()
+        # print(self.dateslist, self.dateslistsorted)
+        self.assertListEqual(self.dateslist, self.dateslistsorted)
+
+    def test_post_number(self):
+        self.postElement = self.driver.find_elements_by_class_name("postbox")
+        self.postCount = len(self.postElement)
+        self.address = "http://localhost:8000/categories/post"
+        self.driver.get(self.address)
+        self.resultsElement = self.driver.find_elements_by_class_name("list-group-item")
+        self.resultCount = len(self.resultsElement)
+        # print(self.postCount, self.resultCount)
+        self.assertEqual(self.postCount, self.resultCount)
+
+    def test_login_fail(self):
+        self.address = "http://localhost:8000/login"
+        self.driver.get(self.address)
+        self.loginBox = self.driver.find_element(By.NAME, "username")
+        self.loginBox.send_keys("wrongusername")
+        self.passwordBox = self.driver.find_element(By.NAME, "password")
+        self.passwordBox.send_keys("wrongpassword")
+        self.form = self.driver.find_element_by_id("submitLogin")
+        self.form.click()
+        self.info = self.driver.find_element_by_class_name("error").text
+        # print(self.info)
+        self.assertEqual(self.info, "Wrong credentials")
+
+    def test_login_success(self):
+        self.address = "http://localhost:8000/login"
+        self.driver.get(self.address)
+        self.loginBox = self.driver.find_element(By.NAME, "username")
+        self.loginBox.send_keys("testowyUser")
+        self.passwordBox = self.driver.find_element(By.NAME, "password")
+        self.passwordBox.send_keys("qwerty")
+        self.form = self.driver.find_element_by_id("submitLogin")
+        self.form.click()
+        self.info = self.driver.find_element_by_class_name("success").text
+        # print(self.info)
+        self.assertEqual(self.info, "Loged in")
+
+    def test_register_fail(self):
+        self.address = "http://localhost:8000/register"
+        self.driver.get(self.address)
+        self.loginBox = self.driver.find_element(By.NAME, "username")
+        self.loginBox.send_keys("wrongusername")
+        self.passwordBox = self.driver.find_element(By.NAME, "email")
+        self.passwordBox.send_keys("wrongemail")
+        self.passwordBox = self.driver.find_element(By.NAME, "password")
+        self.passwordBox.send_keys("wrongpassword")
+        self.passwordBox = self.driver.find_element(By.NAME, "confirmation_password")
+        self.passwordBox.send_keys("differentpassword")
+        self.form = self.driver.find_element_by_id("submitRegister")
+        self.form.click()
+        # print(self.driver.current_url)
+        self.assertEqual(self.driver.current_url, "http://localhost:8000/register")
+
+    def test_register_success(self):
+        self.address = "http://localhost:8000/register"
+        self.driver.get(self.address)
+        self.loginBox = self.driver.find_element(By.NAME, "username")
+        self.loginBox.send_keys("correctusername")
+        self.passwordBox = self.driver.find_element(By.NAME, "email")
+        self.passwordBox.send_keys("corr@ct.mail")
+        self.passwordBox = self.driver.find_element(By.NAME, "password")
+        self.passwordBox.send_keys("correctpassword")
+        self.passwordBox = self.driver.find_element(By.NAME, "confirmation_password")
+        self.passwordBox.send_keys("correctpassword")
+        self.form = self.driver.find_element_by_id("submitRegister")
+        self.form.click()
+        # print(self.driver.current_url)
+        self.assertEqual(self.driver.current_url, "http://localhost:8000/user/register")
+
+    def test_search(self):
+        self.value = "ppost1"
+        self.search = self.driver.find_element_by_id("searchVal")
+        self.search.send_keys(self.value)
+        self.form = self.driver.find_element_by_id("searchButton")
+        self.form.click()
+        print(self.driver.current_url)
+        self.assertEqual(self.driver.current_url, f"http://localhost:8000/search/{self.value}")
