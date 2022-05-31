@@ -229,10 +229,13 @@ class CategoriesTests(TestCase):
             create_post("title_text", 0, random.choice(past_categories))
         categories = get_categories()
         category = "tredning category"
-        for n in range(1, categories[9][1]-1):
+        for n in range(1, categories[len(categories)-1][1]):
             create_post("title_text", 0, category)
         response = self.client.get(reverse('index'))
-        self.assertNotContains(response, category)
+        if len(categories)>10:
+            self.assertNotContains(response, category)
+        else:
+            self.assertContains(response, category)
 
 class TestSelenium(TestCase):
     def setUp(self):
