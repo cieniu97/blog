@@ -206,36 +206,36 @@ class CategoriesTests(TestCase):
         response = self.client.get(reverse('index'))
         self.assertContains(response, category)
     
-    # def test_not_trending_category(self):
-    #     """
-    #     Create 50 new posts with the random category from ten listed.
-    #     Create more than top trending category new posts to see if it will show up in
-    #     index view on trending categories
-    #     """
-    #     past_categories=[
-    #         'category1',
-    #         'category2',
-    #         'category3',
-    #         'category4',
-    #         'category5',
-    #         'category6',
-    #         'category7',
-    #         'category8',
-    #         'category9',
-    #         'category10',
-    #         ]
-    #     for m in range(50):
-    #         create_post("title_text", 0, random.choice(past_categories))
-    #     categories = get_categories()
-    #     category = "tredning category"
-    #     for n in range(1, categories[9][1]):
-    #         create_post("title_text", 0, category)
-    #     response = self.client.get(reverse('index'))
-    #     self.assertNotContains(response, category)
+    def test_not_trending_category(self):
+        """
+        Create 50 new posts with the random category from ten listed.
+        Create more than top trending category new posts to see if it will show up in
+        index view on trending categories
+        """
+        past_categories=[
+            'category1',
+            'category2',
+            'category3',
+            'category4',
+            'category5',
+            'category6',
+            'category7',
+            'category8',
+            'category9',
+            'category10',
+            ]
+        for m in range(50):
+            create_post("title_text", 0, random.choice(past_categories))
+        categories = get_categories()
+        category = "tredning category"
+        for n in range(1, categories[9][1]-1):
+            create_post("title_text", 0, category)
+        response = self.client.get(reverse('index'))
+        self.assertNotContains(response, category)
 
 class TestSelenium(TestCase):
     def setUp(self):
-        self.CHROMEDRIVER_PATH = '/usr/local/bin/chromedriver'
+        self.CHROMEDRIVER_PATH = '/code/chromedriver'
         self.WINDOW_SIZE = "1920,1080"
         self.chrome_options = Options()
         self.chrome_options.add_argument("--headless")
@@ -381,5 +381,5 @@ class TestSelenium(TestCase):
         self.search.send_keys(self.value)
         self.form = self.driver.find_element_by_id("searchButton")
         self.form.click()
-        print(self.driver.current_url)
+        # print(self.driver.current_url)
         self.assertEqual(self.driver.current_url, f"http://localhost:8000/search/{self.value}")
