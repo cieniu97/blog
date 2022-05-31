@@ -207,32 +207,32 @@ class CategoriesTests(TestCase):
         response = self.client.get(reverse('index'))
         self.assertContains(response, category)
     
-    # def test_not_trending_category(self):
-    #     """
-    #     Create 50 new posts with the random category from ten listed.
-    #     Create more than top trending category new posts to see if it will show up in
-    #     index view on trending categories
-    #     """
-    #     past_categories=[
-    #         'category1',
-    #         'category2',
-    #         'category3',
-    #         'category4',
-    #         'category5',
-    #         'category6',
-    #         'category7',
-    #         'category8',
-    #         'category9',
-    #         'category10',
-    #         ]
-    #     for m in range(50):
-    #         create_post("title_text", 0, random.choice(past_categories))
-    #     categories = get_categories()
-    #     category = "tredning category"
-    #     for n in range(1, categories[9][1]-1):
-    #         create_post("title_text", 0, category)
-    #     response = self.client.get(reverse('index'))
-    #     self.assertNotContains(response, category)
+    def test_not_trending_category(self):
+        """
+        Create 50 new posts with the random category from ten listed.
+        Create more than top trending category new posts to see if it will show up in
+        index view on trending categories
+        """
+        past_categories=[
+            'category1',
+            'category2',
+            'category3',
+            'category4',
+            'category5',
+            'category6',
+            'category7',
+            'category8',
+            'category9',
+            'category10',
+            ]
+        for m in range(50):
+            create_post("title_text", 0, random.choice(past_categories))
+        categories = get_categories()
+        category = "tredning category"
+        for n in range(1, categories[9][1]-1):
+            create_post("title_text", 0, category)
+        response = self.client.get(reverse('index'))
+        self.assertNotContains(response, category)
 
 class TestSelenium(TestCase):
     def setUp(self):
@@ -416,6 +416,21 @@ class TestSelenium(TestCase):
         # print(self.driver.current_url)
         self.assertEqual(self.driver.current_url, f"http://localhost:8000/search/{self.value}")
 
+    def test_comment_anon(self):
+        # sprawdza czy jest możliwość dodania posta będąc niezalogowanym użytkownikiem
+        self.driver.delete_all_cookies()
+        self.element = self.driver.find_elements_by_class_name("postbox")
+        self.listLen = len(self.element) + 1
+        self.cookies = self.driver.get_cookies()
+        for elem in range(1, self.listLen):
+            self.address = f"""http://localhost:8000/{elem}/"""
+            self.driver.get(self.address)
+            if self.driver.find_elements_by_id("logininfo"):
+                self.info = True
+            else:
+                self.info = False
+            self.assertEqual(self.info, True)
+
     def test_comment_logged(self):
         # sprawdza czy jest możliwość dodania posta będąc zalogowanym użytkownikiem
         self.test_login_success()
@@ -430,17 +445,3 @@ class TestSelenium(TestCase):
             else:
                 self.info = False
             self.assertEqual(self.info, False)
-
-    def test_comment_anon(self):
-        # sprawdza czy jest możliwość dodania posta będąc niezalogowanym użytkownikiem
-        self.element = self.driver.find_elements_by_class_name("postbox")
-        self.listLen = len(self.element) + 1
-        self.cookies = self.driver.get_cookies()
-        for elem in range(1, self.listLen):
-            self.address = f"""http://localhost:8000/{elem}/"""
-            self.driver.get(self.address)
-            if self.driver.find_elements_by_id("logininfo"):
-                self.info = True
-            else:
-                self.info = False
-            self.assertEqual(self.info, True)
