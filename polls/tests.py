@@ -11,6 +11,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from . import urls
 
+import os
 import lorem
 import random
 import string
@@ -228,14 +229,14 @@ class CategoriesTests(TestCase):
     #         create_post("title_text", 0, random.choice(past_categories))
     #     categories = get_categories()
     #     category = "tredning category"
-    #     for n in range(1, categories[9][1]):
+    #     for n in range(1, categories[9][1]-1):
     #         create_post("title_text", 0, category)
     #     response = self.client.get(reverse('index'))
     #     self.assertNotContains(response, category)
 
 class TestSelenium(TestCase):
     def setUp(self):
-        self.CHROMEDRIVER_PATH = '/usr/local/bin/chromedriver'
+        self.CHROMEDRIVER_PATH = 'chromedriver'
         self.WINDOW_SIZE = "1920,1080"
         self.chrome_options = Options()
         self.chrome_options.add_argument("--headless")
@@ -247,9 +248,11 @@ class TestSelenium(TestCase):
         self.driver.get(self.address)
 
     def test_is_working(self):
+        # sprawdza poprawność tytułu uruchomionej strony
         self.assertEqual(self.driver.title, 'FUN animals')
 
     def test_pages_urls_working(self):
+        # sprawdza działanie odnośników zawartych w urls.py
         self.exceptionList = ['storeUser', 'loginUser', 'storeComment', 'show']
         self.argumentNeedList = ['search', 'categories']
         
@@ -269,14 +272,17 @@ class TestSelenium(TestCase):
                 self.assertEqual(self.driver.title, 'FUN animals')
 
     def test_images_show(self):
+        # sprawdza czy grafiki zawarte w podglądzie posta są wyświetlane
         self.element = self.driver.find_elements_by_class_name("postimg")
         for elem in self.element:
             elem = elem.is_displayed()
             self.assertEqual(elem, True)
 
     def test_images_urls(self):
+        # sprawdza czy pliki załączone jako tło elementu znajdują się w folderze ze zdjęciami
         self.element = self.driver.find_elements_by_class_name("postimg")
-        self.imgsrcs = ['Tiger_shark.jpg', 'f9b9dae53ccc8733ab7ca334d79cdc5d--animals.jpg', 'avaterH4B_wYomu3D.png', 'avaterH4B_wYomu3D.png']
+        self.imgpath = "/code/media/photos/"
+        self.imgsrcs = os.listdir(self.imgpath)
         self.imgurls = []
         for i in self.imgsrcs:
             self.imgurls.append(f"""url("{self.address}media/photos/{i}")""")
@@ -285,6 +291,7 @@ class TestSelenium(TestCase):
             self.assertIn(elem, self.imgurls)
 
     def test_post_urls_working(self):
+        # sprawdza działanie odnośników do konkretnego posta
         self.element = self.driver.find_elements_by_class_name("postbox")
         self.listLen = len(self.element) + 1
         for elem in range(1, self.listLen):
@@ -293,6 +300,7 @@ class TestSelenium(TestCase):
             self.assertEqual(self.driver.title, 'FUN animals')
 
     def test_post_dates(self):
+        # sprawdza czy wyświetlane posty są posortowane według daty
         self.element = self.driver.find_elements_by_class_name("postbox")
         self.listLen = len(self.element) + 1
         self.dateslist = []
@@ -308,6 +316,7 @@ class TestSelenium(TestCase):
         self.assertListEqual(self.dateslist, self.dateslistsorted)
 
     def test_post_number(self):
+        # sprawdza czy lista postów na stronie głównej odpowiada liczbie postów w kategorii "post"
         self.postElement = self.driver.find_elements_by_class_name("postbox")
         self.postCount = len(self.postElement)
         self.address = "http://localhost:8000/categories/post"
@@ -318,6 +327,7 @@ class TestSelenium(TestCase):
         self.assertEqual(self.postCount, self.resultCount)
 
     def test_login_fail(self):
+        # sprawdza wyświetlenie informacji w przypadku nieudanej próby logowania
         self.address = "http://localhost:8000/login"
         self.driver.get(self.address)
         self.loginBox = self.driver.find_element(By.NAME, "username")
@@ -331,6 +341,7 @@ class TestSelenium(TestCase):
         self.assertEqual(self.info, "Wrong credentials")
 
     def test_login_success(self):
+        # sprawdza wyświetlenie informacji w przypadku udanej próby logowania
         self.address = "http://localhost:8000/login"
         self.driver.get(self.address)
         self.loginBox = self.driver.find_element(By.NAME, "username")
@@ -343,7 +354,8 @@ class TestSelenium(TestCase):
         # print(self.info)
         self.assertEqual(self.info, "Loged in")
 
-    def test_register_fail(self):
+    def test_register_email_fail(self):
+        # sprawdza czy formularz zadziała w przypadku nieprawidłowego formatu email
         self.address = "http://localhost:8000/register"
         self.driver.get(self.address)
         self.loginBox = self.driver.find_element(By.NAME, "username")
@@ -353,13 +365,32 @@ class TestSelenium(TestCase):
         self.passwordBox = self.driver.find_element(By.NAME, "password")
         self.passwordBox.send_keys("wrongpassword")
         self.passwordBox = self.driver.find_element(By.NAME, "confirmation_password")
-        self.passwordBox.send_keys("differentpassword")
+        self.passwordBox.send_keys("wrongpassword")
         self.form = self.driver.find_element_by_id("submitRegister")
         self.form.click()
         # print(self.driver.current_url)
         self.assertEqual(self.driver.current_url, "http://localhost:8000/register")
 
+    def test_register_password_fail(self):
+        # sprawdza czy formularz zadziała w przypadku nieprawidłowego formatu email
+        self.address = "http://localhost:8000/register"
+        self.driver.get(self.address)
+        self.loginBox = self.driver.find_element(By.NAME, "username")
+        self.loginBox.send_keys("wrongusername")
+        self.passwordBox = self.driver.find_element(By.NAME, "email")
+        self.passwordBox.send_keys("wrong@ema.il")
+        self.passwordBox = self.driver.find_element(By.NAME, "password")
+        self.passwordBox.send_keys("wrongpassword")
+        self.passwordBox = self.driver.find_element(By.NAME, "confirmation_password")
+        self.passwordBox.send_keys("differentpassword")
+        self.form = self.driver.find_element_by_id("submitRegister")
+        self.form.click()
+        self.info = self.driver.find_element_by_class_name("error").text
+        # print(self.driver.current_url)
+        self.assertEqual(self.info, "Passwords not matching")
+
     def test_register_success(self):
+        # sprawdza czy formularz zadziała w przypadku prawidłowych danych
         self.address = "http://localhost:8000/register"
         self.driver.get(self.address)
         self.loginBox = self.driver.find_element(By.NAME, "username")
@@ -376,10 +407,40 @@ class TestSelenium(TestCase):
         self.assertEqual(self.driver.current_url, "http://localhost:8000/user/register")
 
     def test_search(self):
+        # sprawdza czy pole search wyszukuje dany element
         self.value = "ppost1"
         self.search = self.driver.find_element_by_id("searchVal")
         self.search.send_keys(self.value)
         self.form = self.driver.find_element_by_id("searchButton")
         self.form.click()
-        print(self.driver.current_url)
+        # print(self.driver.current_url)
         self.assertEqual(self.driver.current_url, f"http://localhost:8000/search/{self.value}")
+
+    def test_comment_logged(self):
+        # sprawdza czy jest możliwość dodania posta będąc zalogowanym użytkownikiem
+        self.test_login_success()
+        self.element = self.driver.find_elements_by_class_name("postbox")
+        self.listLen = len(self.element) + 1
+        self.cookies = self.driver.get_cookies()
+        for elem in range(1, self.listLen):
+            self.address = f"""http://localhost:8000/{elem}/"""
+            self.driver.get(self.address)
+            if self.driver.find_elements_by_id("logininfo"):
+                self.info = True
+            else:
+                self.info = False
+            self.assertEqual(self.info, False)
+
+    def test_comment_anon(self):
+        # sprawdza czy jest możliwość dodania posta będąc niezalogowanym użytkownikiem
+        self.element = self.driver.find_elements_by_class_name("postbox")
+        self.listLen = len(self.element) + 1
+        self.cookies = self.driver.get_cookies()
+        for elem in range(1, self.listLen):
+            self.address = f"""http://localhost:8000/{elem}/"""
+            self.driver.get(self.address)
+            if self.driver.find_elements_by_id("logininfo"):
+                self.info = True
+            else:
+                self.info = False
+            self.assertEqual(self.info, True)
